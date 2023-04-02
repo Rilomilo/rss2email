@@ -224,7 +224,10 @@ def smtp_send(recipient, message, config=None, section='DEFAULT'):
     smtp.send_message(message, config.get(section, 'from'), recipient.split(','))
     smtp.quit()
 
-def imap_send(message, config=None, section='DEFAULT'):
+def encode_folder_name(folder_name):
+    return folder_name.encode('utf-7').replace(b'+', b'&').replace(b'/', b',').decode('ascii')
+
+def imap_send(message, config=None, section='DEFAULT',mailbox=''):
     if config is None:
         config = _config.CONFIG
     server = config.get(section, 'imap-server')
@@ -248,10 +251,18 @@ def imap_send(message, config=None, section='DEFAULT'):
             except Exception as e:
                 raise _error.IMAPAuthenticationError(
                     server=server, port=port, username=username)
-        mailbox = config.get(section, 'imap-mailbox')
+        
         date = _imaplib.Time2Internaldate(_time.localtime())
         message_bytes = _flatten(message)
-        imap.append(mailbox, None, date, message_bytes)
+
+        mailbox_path = '"RSS/{}"'.format(encode_folder_name(mailbox))
+        status,_=imap.select(mailbox_path)
+        # 如果不存在就新建目录
+        if status != 'OK':
+            status,_=imap.create(mailbox_path)
+            assert status == 'OK'
+        
+        imap.append(mailbox_path, None, date, message_bytes)
     finally:
         imap.logout()
 
@@ -402,14 +413,14 @@ def sendmail_send(recipient, message, config=None, section='DEFAULT'):
     except Exception as e:
         raise _error.SendmailError() from e
 
-def send(recipient, message, config=None, section='DEFAULT'):
+def send(recipient, message, config=None, section='DEFAULT', mailbox=''):
     protocol = config.get(section, 'email-protocol')
     if protocol == 'smtp':
         smtp_send(
             recipient=recipient, message=message,
             config=config, section=section)
     elif protocol == 'imap':
-        imap_send(message=message, config=config, section=section)
+        imap_send(message=message, config=config, section=section, mailbox=mailbox)
     elif protocol == 'maildir':
         maildir_send(message=message, config=config, section=section)
     else:

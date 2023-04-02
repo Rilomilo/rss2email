@@ -656,7 +656,7 @@ class Feed (object):
             'feed-name': self.name,
             'feed-url': self.url,
             'feed-title': '<feed title>',
-            'author': '<author>',
+            'author': '',
             'publisher': '<publisher>',
             }
         feed = parsed.feed
@@ -668,6 +668,9 @@ class Feed (object):
                     break
         if 'name' in feed.get('publisher_detail', []):
             data['publisher'] = feed.publisher_detail.name
+        # 如果没有author，就不显示author
+        if data['author']=='':
+            self.name_format=self.name_format.replace(': {author}','')
         name = self.name_format.format(**data)
         name = name.replace('\n', ' ').strip()
         return _html.unescape(name)
@@ -712,6 +715,9 @@ class Feed (object):
         If the best guess isn't well-formed (something@something.com),
         use `self.from_email` instead.
         """
+        # 将发信地址改为feed名
+        self.from_email = self.from_email.format(**{"feed-name": self.name})
+
         if self.force_from:
             return self.from_email
         feed = parsed.feed
@@ -724,7 +730,8 @@ class Feed (object):
                 return self._validate_email(feed.publisher_detail.email)
             if feed.get('errorreportsto', None):
                 return self._validate_email(feed.errorreportsto)
-        _LOG.debug('no sender address found, fallback to default')
+        
+        _LOG.debug(f'no sender address found, use{self.from_email}')
         return self.from_email
 
     def _get_entry_email(self, parsed, entry):
@@ -899,13 +906,12 @@ class Feed (object):
             content['value'] = '\n'.join(lines)
             return content
 
-    def _send(self, sender, message):
+    def _send(self, sender, message, mailbox):
         _LOG.info('send message for {}'.format(self))
         section = self.section
         if section not in self.config:
             section = 'DEFAULT'
-        _email.send(recipient=self.to, message=message,
-                    config=self.config, section=section)
+        _email.send(recipient=self.to, message=message,config=self.config, section=section, mailbox=mailbox)
 
     def run(self, send=True, clean=False):
         """Fetch and process the feed, mailing entry emails.
@@ -955,7 +961,7 @@ class Feed (object):
             for (guid, state, sender, message) in self._process(parsed):
                 _LOG.debug('new message: {}'.format(message['Subject']))
                 if send:
-                    self._send(sender=sender, message=message)
+                    self._send(sender=sender, message=message, mailbox=parsed.feed.title)
                     state['message_id'] = str(message["Message-ID"])
                 self.seen[guid] = state
 

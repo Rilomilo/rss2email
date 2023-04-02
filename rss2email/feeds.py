@@ -229,7 +229,7 @@ class Feeds (list):
     def load(self, require=False):
         _LOG.debug('load feed configuration from {}'.format(self.configfiles))
         if self.configfiles:
-            read_configfiles = self.config.read(self.configfiles)
+            read_configfiles = self.config.read(self.configfiles, encoding="utf-8")
         else:
             read_configfiles = []
         _LOG.debug('loaded configuration from {}'.format(read_configfiles))
