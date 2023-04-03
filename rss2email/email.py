@@ -60,6 +60,7 @@ import html2text
 from . import LOG as _LOG
 from . import config as _config
 from . import error as _error
+from .imap_utf7 import encode as imap_utf7_encode, quote
 
 
 def guess_encoding(string, encodings=('US-ASCII', 'UTF-8')):
@@ -224,9 +225,6 @@ def smtp_send(recipient, message, config=None, section='DEFAULT'):
     smtp.send_message(message, config.get(section, 'from'), recipient.split(','))
     smtp.quit()
 
-def encode_folder_name(folder_name):
-    return folder_name.encode('utf-7').replace(b'+', b'&').replace(b'/', b',').decode('ascii')
-
 def imap_send(message, config=None, section='DEFAULT',mailbox=''):
     if config is None:
         config = _config.CONFIG
@@ -255,7 +253,7 @@ def imap_send(message, config=None, section='DEFAULT',mailbox=''):
         date = _imaplib.Time2Internaldate(_time.localtime())
         message_bytes = _flatten(message)
 
-        mailbox_path = '"RSS/{}"'.format(encode_folder_name(mailbox))
+        mailbox_path=quote(imap_utf7_encode('RSS/{}'.format(mailbox)))
         status,_=imap.select(mailbox_path)
         # 如果不存在就新建目录
         if status != 'OK':
