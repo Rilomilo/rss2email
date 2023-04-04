@@ -33,6 +33,10 @@ __author__ = 'The rss2email maintainers'
 __email__ = 'rss2email@tremily.us'
 __copyright__ = '(C) 2004 Aaron Swartz. GNU GPL 2 or 3.'
 
+_logging.basicConfig(
+    filename='log.txt',
+    format='%(asctime)s %(message)s'
+)
 LOG = _logging.getLogger('rss2email')
 LOG.addHandler(_logging.StreamHandler())
 LOG.setLevel(_logging.ERROR)
