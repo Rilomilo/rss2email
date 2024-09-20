@@ -407,11 +407,22 @@ class Feed (object):
         warned = False
         status = getattr(parsed, 'status', 200)
         _LOG.debug('HTTP status {}'.format(status))
-        if status == 301:
+        if status in [301, 308]:
             _LOG.info('redirect {} from {} to {}'.format(
                     self.name, self.url, parsed['url']))
             self.url = parsed['url']
-        elif status not in [200, 302, 304, 307]:
+            # TODO: `url` is not saved -- add config option to call feeds.save_config() in run command
+        elif status == 304:
+            _LOG.info('skipping {}: feed was not modified since last update'.format(
+                    self.name, self.url))
+            return
+        elif status == 410:
+            _LOG.warning('deactivate {} because {} is gone'.format(
+                    self.name, self.url))
+            self.active = False
+            # TODO: `active` is not saved -- add config option to call feeds.save_config() in run command
+            return
+        elif status >= 400:
             raise _error.HTTPError(status=status, feed=self)
 
         http_headers = parsed.get('headers', {})
