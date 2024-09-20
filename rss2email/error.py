@@ -98,7 +98,7 @@ class IMAPConnectionError (ValueError, RSS2EmailError):
         if message is None:
             message = 'could not connect to mail server {}:{}'.format(
                 server, port)
-        super(IMAPConnectionError, self).__init__(message=message)
+        super(IMAPConnectionError, self).__init__(message)
         self.server = server
         self.port = port
 
