@@ -249,24 +249,24 @@ class Feeds (List[_feed.Feed]):
             with _codecs.open(self.datafile_path, 'w', self.datafile_encoding) as f:
                 self._save_feed_states(feeds=[], stream=f)
         try:
-            self.datafile = _codecs.open(
-                self.datafile_path, 'r', self.datafile_encoding)
+            self.datafile = _codecs.open(self.datafile_path, 'r', self.datafile_encoding)
         except IOError as e:
             raise _error.DataFileError(feeds=self) from e
 
         if UNIX:
             _fcntl.lockf(self.datafile, _fcntl.LOCK_SH)
 
-        self.clear()
-
-        level = _LOG.level
-        handlers = list(_LOG.handlers)
-        feeds = []
         try:
             data = _json.load(self.datafile)
         except ValueError as e:
             _LOG.info('could not load data file using JSON')
             data = self._load_pickled_data(self.datafile)
+
+        self.clear()
+
+        level = _LOG.level
+        handlers = list(_LOG.handlers)
+        feeds = []
         version = data.get('version', None)
         if version != self.datafile_version:
             data = self._upgrade_state_data(data)
@@ -305,7 +305,6 @@ class Feeds (List[_feed.Feed]):
     def close(self):
         if self.datafile is not None:
             self.datafile.close()
-            self.datafile = None
 
     def _load_pickled_data(self, stream):
         _LOG.info('try and load data file using Pickle')
@@ -353,14 +352,10 @@ class Feeds (List[_feed.Feed]):
             self._save_feed_states(feeds=self, stream=f)
             f.flush()
             _os.fsync(f.fileno())
-        if UNIX:
-            # Replace the file, then release the lock by closing the old one.
-            _os.replace(tmpfile, self.datafile_path)
-            self.close()  # release the lock
-        else:
-            # On Windows we cannot replace the file while it is opened. And we have no lock.
-            self.close()
-            _os.replace(tmpfile, self.datafile_path)
+
+        self.close()
+        _os.replace(tmpfile, self.datafile_path)
+        self.datafile = _codecs.open(self.datafile_path, 'r', self.datafile_encoding)
 
     def _save_feed_states(self, feeds, stream):
         _json.dump(
