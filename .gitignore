@@ -2,3 +2,7 @@ __pycache__
 build
 dist
 MANIFEST
+test.py
+.vscode
+log.txt
+config/
