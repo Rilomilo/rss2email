@@ -231,6 +231,8 @@ CONFIG['DEFAULT'] = _collections.OrderedDict((
         # Sendmail (or compatible) configuration
         ('sendmail', '/usr/sbin/sendmail'),  # Path to sendmail (or compatible)
         ('sendmail_config', ''),
+        # MS OAuth2 authorization token path, it's prior to password authorization if existed
+        ('refresh-token-path', ''),
         # SMTP configuration
         ('smtp-auth', str(False)),      # set to True to use SMTP AUTH
         ('smtp-username', 'username'),  # username for SMTP AUTH

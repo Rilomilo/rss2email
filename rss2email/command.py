@@ -39,6 +39,7 @@ import time as _time
 
 from . import LOG as _LOG
 from . import error as _error
+from .feeds import Feeds
 
 def new(feeds, args):
     "Create a new feed database."
@@ -69,7 +70,7 @@ def add(feeds, args):
     feeds.save_config()
     feeds.save_feeds()
 
-def run(feeds, args):
+def run(feeds:Feeds, args):
     "Fetch feeds and send entry emails."
     if not args.index:
         args.index = range(len(feeds))

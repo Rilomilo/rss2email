@@ -37,6 +37,7 @@
 """Define the ``Feed`` class for handling a list of feeds
 """
 
+from typing import List
 import codecs as _codecs
 import collections as _collections
 import os as _os
@@ -59,7 +60,7 @@ except ImportError:
 ROOT_PATH = _os.path.splitdrive(_sys.executable)[0] or _os.sep
 
 
-class Feeds (list):
+class Feeds (List[_feed.Feed]):
     """Utility class for rss2email activity.
 
     >>> import codecs
@@ -167,7 +168,7 @@ class Feeds (list):
             self.config.pop(feed.section)
         return feed
 
-    def index(self, index):
+    def index(self, index)->_feed.Feed:
         if isinstance(index, int):
             try:
                 return self[index]

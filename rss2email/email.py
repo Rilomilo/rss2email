@@ -61,6 +61,7 @@ from . import LOG as _LOG
 from . import config as _config
 from . import error as _error
 from .imap_utf7 import encode as imap_utf7_encode, quote
+from .oauth import generate_auth_string
 
 
 def guess_encoding(string, encodings=('US-ASCII', 'UTF-8')):
@@ -265,17 +266,16 @@ def imap_send(message, config=None, section='DEFAULT',mailbox=''):
         imap = _imaplib.IMAP4(server, port)
     try:
         if config.getboolean(section, 'imap-auth'):
+            refresh_token_path = config.get(section, "refresh-token-path")
             username = config.get(section, 'imap-username')
-            password = config.get(section, 'imap-password')
-            try:
+
+            if refresh_token_path:
+                imap.authenticate("XOAUTH2", lambda x: generate_auth_string(username, refresh_token_path))
+            else:
+                password = config.get(section, 'imap-password')
                 if not ssl:
                     imap.starttls()
                 imap.login(username, password)
-            except KeyboardInterrupt:
-                raise
-            except Exception as e:
-                raise _error.IMAPAuthenticationError(
-                    server=server, port=port, username=username)
         
         date = _imaplib.Time2Internaldate(_time.localtime())
         message_bytes = _flatten(message)
