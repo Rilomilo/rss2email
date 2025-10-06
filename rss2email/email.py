@@ -266,16 +266,21 @@ def imap_send(message, config=None, section='DEFAULT',mailbox=''):
         imap = _imaplib.IMAP4(server, port)
     try:
         if config.getboolean(section, 'imap-auth'):
-            refresh_token_path = config.get(section, "refresh-token-path")
             username = config.get(section, 'imap-username')
-
-            if refresh_token_path:
-                imap.authenticate("XOAUTH2", lambda x: generate_auth_string(username, refresh_token_path))
-            else:
-                password = config.get(section, 'imap-password')
+            password = config.get(section, 'imap-password')
+            refresh_token_path = config.get(section, "refresh-token-path")
+            try:
                 if not ssl:
                     imap.starttls()
-                imap.login(username, password)
+                # 优先采用 OAuth2 认证
+                if refresh_token_path:
+                    imap.authenticate("XOAUTH2", lambda x: generate_auth_string(username, refresh_token_path))
+                else:
+                    imap.login(username, password)
+            except KeyboardInterrupt:
+                    raise
+            except Exception as e:
+                raise _error.IMAPAuthenticationError(server=server, port=port, username=username)
         
         date = _imaplib.Time2Internaldate(_time.localtime())
         message_bytes = _flatten(message)
